@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard de Ventas – TechSolutions S.A.S.</title>
+<style>
+:root{--azul:#1F4E78;--fondo:#F3F6FA;--texto:#1F2933;--suave:#667085;--borde:#E4E9F0}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--fondo);color:var(--texto)}
+header{background:var(--azul);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:1.5rem}
+header p{margin:2px 0 0;opacity:.85}
+.filtros{display:flex;gap:12px;flex-wrap:wrap}
+.filtros label{font-size:.75rem;display:flex;flex-direction:column;gap:4px}
+select{padding:8px 10px;border-radius:6px;border:0;min-width:170px;font-size:.95rem}
+main{max-width:1280px;margin:0 auto;padding:20px;display:grid;gap:16px}
+.card{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:16px}
+.card h2{font-size:1rem;margin:0 0 10px}
+.kpis,.tops{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.et{font-size:.78rem;color:var(--suave);text-transform:uppercase;letter-spacing:.04em}
+.val{font-size:1.8rem;font-weight:700;color:var(--azul);margin-top:6px}
+.tops .val{font-size:1.3rem}
+.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.caja{position:relative;height:270px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--borde)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.78rem;color:var(--suave);text-transform:uppercase}
+footer{text-align:center;color:var(--suave);font-size:.8rem;padding:8px 16px 24px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Dashboard de Ventas</h1>
+    <p>TechSolutions S.A.S.</p>
+  </div>
+  <div class="filtros">
+    <label>Ciudad<select id="fCiudad"></select></label>
+    <label>Categoría<select id="fCategoria"></select></label>
+  </div>
+</header>
+
+<main>
+  <section class="kpis">
+    <div class="card"><div class="et">Ingresos por ventas</div><div class="val" id="kIng">–</div></div>
+    <div class="card"><div class="et">Unidades vendidas</div><div class="val" id="kUni">–</div></div>
+    <div class="card"><div class="et">Productos diferentes</div><div class="val" id="kProd">–</div></div>
+    <div class="card"><div class="et">Promedio de ventas por producto</div><div class="val" id="kProm">–</div></div>
+  </section>
+
+  <section class="graficos">
+    <div class="card"><h2>Ventas por categoría</h2><div class="caja"><canvas id="gCat"></canvas></div></div>
+    <div class="card"><h2>Participación de ventas por producto</h2><div class="caja"><canvas id="gProd"></canvas></div></div>
+    <div class="card"><h2>Ventas por ciudad</h2><div class="caja"><canvas id="gCiu"></canvas></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Desempeño de los vendedores</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Vendedor</th><th>Unidades</th><th>Ingresos</th><th>% Participación</th><th>Ranking</th></tr></thead>
+        <tbody id="tbVend"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tops">
+    <div class="card"><div class="et">Producto con más ingresos</div><div class="val" id="tProd">–</div></div>
+    <div class="card"><div class="et">Mejor categoría</div><div class="val" id="tCat">–</div></div>
+    <div class="card"><div class="et">Ciudad con más ingresos</div><div class="val" id="tCiu">–</div></div>
+    <div class="card"><div class="et">Mejor vendedor</div><div class="val" id="tVen">–</div></div>
+  </section>
+</main>
+<footer id="pie"></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ====== CONFIGURACIÓN ======
+// Para leer los datos desde Google Sheets (nube), pega aquí el enlace CSV publicado:
+// Archivo > Compartir > Publicar en la Web > Hoja "Ventas" > formato CSV
+const FUENTE_CSV = "";
+
+// Datos del caso práctico (se usan si FUENTE_CSV está vacío o falla)
+const DATOS_BASE = [
+  {id:"001",producto:"Portátil",categoria:"Hardware",ciudad:"Bogotá",vendedor:"Carlos",unidades:5,precio:2800000},
+  {id:"002",producto:"Mouse",categoria:"Accesorios",ciudad:"Medellín",vendedor:"Laura",unidades:20,precio:45000},
+  {id:"003",producto:"Licencia",categoria:"Software",ciudad:"Cali",vendedor:"Andrés",unidades:10,precio:180000},
+  {id:"004",producto:"Teclado",categoria:"Accesorios",ciudad:"Bogotá",vendedor:"Carlos",unidades:15,precio:85000},
+  {id:"005",producto:"Portátil",categoria:"Hardware",ciudad:"Cali",vendedor:"Laura",unidades:3,precio:2800000},
+  {id:"006",producto:"Soporte",categoria:"Servicios",ciudad:"Medellín",vendedor:"Andrés",unidades:8,precio:120000},
+  {id:"007",producto:"Monitor",categoria:"Hardware",ciudad:"Bogotá",vendedor:"Laura",unidades:6,precio:750000},
+  {id:"008",producto:"Licencia",categoria:"Software",ciudad:"Cali",vendedor:"Carlos",unidades:12,precio:180000},
+  {id:"009",producto:"Mouse",categoria:"Accesorios",ciudad:"Bogotá",vendedor:"Andrés",unidades:25,precio:45000},
+  {id:"010",producto:"Soporte",categoria:"Servicios",ciudad:"Medellín",vendedor:"Laura",unidades:10,precio:120000}
+];
+
+// ====== UTILIDADES ======
+const $ = id => document.getElementById(id);
+const COP = new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0});
+const NUM = new Intl.NumberFormat("es-CO");
+const COLORES = ["#1F4E78","#2E86C1","#F39C12","#27AE60","#8E44AD","#C0392B","#16A085","#7F8C8D"];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const abreviar = v => v >= 1e6 ? "$" + (v/1e6).toFixed(1).replace(".",",") + " M" : "$" + NUM.format(v);
+const pct = (a,b) => b ? (a/b*100).toFixed(1).replace(".",",") + " %" : "–";
+
+let datos = [];
+const graficos = {};
+
+// ====== LECTURA DE CSV (Google Sheets) ======
+function parseCSV(t){
+  const filas = []; let f = [], c = "", q = false;
+  for (let i = 0; i < t.length; i++){
+    const ch = t[i];
+    if (q){
+      if (ch === '"'){ if (t[i+1] === '"'){ c += '"'; i++; } else q = false; }
+      else c += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ","){ f.push(c); c = ""; }
+    else if (ch === "\n" || ch === "\r"){
+      if (ch === "\r" && t[i+1] === "\n") i++;
+      f.push(c); c = ""; filas.push(f); f = [];
+    } else c += ch;
+  }
+  if (c !== "" || f.length){ f.push(c); filas.push(f); }
+  return filas;
+}
+const aNumero = v => Number(String(v).replace(/[^\d-]/g,"")) || 0;
+function csvADatos(texto){
+  const filas = parseCSV(texto).filter(r => r.some(x => x.trim() !== ""));
+  const enc = filas.shift().map(x => x.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""));
+  const idx = n => { const i = enc.indexOf(n); if (i < 0) throw new Error("Falta la columna " + n); return i; };
+  const [iId,iPro,iCat,iCiu,iVen,iUni,iPre] = ["id","producto","categoria","ciudad","vendedor","unidades","precio"].map(idx);
+  return filas.map(r => ({
+    id:r[iId], producto:r[iPro].trim(), categoria:r[iCat].trim(), ciudad:r[iCiu].trim(),
+    vendedor:r[iVen].trim(), unidades:aNumero(r[iUni]), precio:aNumero(r[iPre])
+  }));
+}
+
+// ====== CÁLCULOS ======
+function agrupar(lista, clave){
+  const m = new Map();
+  for (const d of lista){
+    const o = m.get(d[clave]) || {n:d[clave], ing:0, uni:0};
+    o.ing += d.total; o.uni += d.unidades; m.set(d[clave], o);
+  }
+  return [...m.values()].sort((a,b) => b.ing - a.ing);
+}
+function filtrados(){
+  const c = $("fCiudad").value, k = $("fCategoria").value;
+  return datos.filter(d => (!c || d.ciudad === c) && (!k || d.categoria === k));
+}
+
+// ====== GRÁFICOS ======
+const etiquetas = {
+  id:"etiquetas",
+  afterDatasetsDraw(ch){
+    if (ch.config.type !== "bar") return;
+    const ctx = ch.ctx; ctx.save();
+    ctx.font = "12px Segoe UI, Arial"; ctx.fillStyle = "#1F2933"; ctx.textBaseline = "middle";
+    ch.getDatasetMeta(0).data.forEach((el,i) => ctx.fillText(abreviar(ch.data.datasets[0].data[i]), el.x + 6, el.y));
+    ctx.restore();
+  }
+};
+function grafico(id, tipo, lista){
+  const total = lista.reduce((s,x) => s + x.ing, 0);
+  const etq = tipo === "pie" ? lista.map(x => x.n + " (" + pct(x.ing,total) + ")") : lista.map(x => x.n);
+  const val = lista.map(x => x.ing);
+  if (graficos[id]){
+    graficos[id].data.labels = etq;
+    graficos[id].data.datasets[0].data = val;
+    graficos[id].update();
+    return;
+  }
+  graficos[id] = new Chart($(id), {
+    type: tipo,
+    plugins: [etiquetas],
+    data: {labels: etq, datasets: [{data: val, backgroundColor: tipo === "pie" ? COLORES : "#1F4E78"}]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: tipo === "bar" ? "y" : "x",
+      plugins: {
+        legend: {display: tipo === "pie", position: "bottom"},
+        tooltip: {callbacks: {label: c => " " + COP.format(c.raw)}}
+      },
+      scales: tipo === "bar" ? {x: {grace: "18%", ticks: {callback: v => abreviar(v)}}} : {}
+    }
+  });
+}
+
+// ====== RENDER ======
+function render(){
+  const l = filtrados();
+  const ing = l.reduce((s,d) => s + d.total, 0);
+  const uni = l.reduce((s,d) => s + d.unidades, 0);
+  const prods = new Set(l.map(d => d.producto)).size;
+  $("kIng").textContent = COP.format(ing);
+  $("kUni").textContent = NUM.format(uni);
+  $("kProd").textContent = prods;
+  $("kProm").textContent = COP.format(prods ? ing/prods : 0);
+
+  const cat = agrupar(l,"categoria"), pro = agrupar(l,"producto"),
+        ciu = agrupar(l,"ciudad"), ven = agrupar(l,"vendedor");
+  grafico("gCat","bar",cat);
+  grafico("gProd","pie",pro);
+  grafico("gCiu","bar",ciu);
+
+  $("tbVend").innerHTML = ven.map((v,i) =>
+    "<tr><td>" + esc(v.n) + "</td><td>" + NUM.format(v.uni) + "</td><td>" + COP.format(v.ing) +
+    "</td><td>" + pct(v.ing,ing) + "</td><td>" + (i+1) + "</td></tr>").join("")
+    || '<tr><td colspan="5">Sin datos para este filtro</td></tr>';
+
+  $("tProd").textContent = pro[0] ? pro[0].n : "–";
+  $("tCat").textContent  = cat[0] ? cat[0].n : "–";
+  $("tCiu").textContent  = ciu[0] ? ciu[0].n : "–";
+  $("tVen").textContent  = ven[0] ? ven[0].n : "–";
+}
+function llenarFiltro(id, etiqueta, valores){
+  $(id).innerHTML = '<option value="">' + etiqueta + "</option>" +
+    [...new Set(valores)].sort().map(v => '<option value="' + esc(v) + '">' + esc(v) + "</option>").join("");
+  $(id).addEventListener("change", render);
+}
+
+// ====== INICIO ======
+async function iniciar(){
+  let origen = "Datos incluidos en la página";
+  datos = DATOS_BASE.map(d => ({...d}));
+  if (FUENTE_CSV){
+    try {
+      const r = await fetch(FUENTE_CSV);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      datos = csvADatos(await r.text());
+      origen = "Google Sheets (nube)";
+    } catch (e){
+      console.error(e);
+      origen = "Datos incluidos (no se pudo leer la hoja en la nube)";
+    }
+  }
+  datos.forEach(d => d.total = d.unidades * d.precio);
+  llenarFiltro("fCiudad","Todas las ciudades", datos.map(d => d.ciudad));
+  llenarFiltro("fCategoria","Todas las categorías", datos.map(d => d.categoria));
+  render();
+  $("pie").textContent = "TechSolutions S.A.S. · Caso práctico con datos ficticios · Fuente: " + origen +
+    " · Consultado: " + new Date().toLocaleString("es-CO");
+}
+iniciar();
+</script>
+</body>
+</html>

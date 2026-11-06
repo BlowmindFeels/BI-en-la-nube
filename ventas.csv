@@ -1,0 +1,11 @@
+ID,Producto,Categoría,Ciudad,Vendedor,Unidades,Precio
+001,Portátil,Hardware,Bogotá,Carlos,5,2800000
+002,Mouse,Accesorios,Medellín,Laura,20,45000
+003,Licencia,Software,Cali,Andrés,10,180000
+004,Teclado,Accesorios,Bogotá,Carlos,15,85000
+005,Portátil,Hardware,Cali,Laura,3,2800000
+006,Soporte,Servicios,Medellín,Andrés,8,120000
+007,Monitor,Hardware,Bogotá,Laura,6,750000
+008,Licencia,Software,Cali,Carlos,12,180000
+009,Mouse,Accesorios,Bogotá,Andrés,25,45000
+010,Soporte,Servicios,Medellín,Laura,10,120000
