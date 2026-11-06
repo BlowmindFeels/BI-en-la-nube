@@ -1,0 +1,12 @@
+{
+  "name": "TechSolutions",
+  "dataColors": ["#1F4E78", "#2E86C1", "#F39C12", "#27AE60", "#8E44AD", "#C0392B"],
+  "background": "#FFFFFF",
+  "foreground": "#1F2933",
+  "tableAccent": "#1F4E78",
+  "textClasses": {
+    "title": { "fontFace": "Segoe UI Semibold", "fontSize": 14, "color": "#1F4E78" },
+    "label": { "fontFace": "Segoe UI", "fontSize": 11 },
+    "callout": { "fontFace": "Segoe UI Semibold", "fontSize": 28, "color": "#1F4E78" }
+  }
+}
